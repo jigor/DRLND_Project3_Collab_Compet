@@ -17,17 +17,13 @@ LR_ACTOR = 1e-4         # learning rate of the actor
 LR_CRITIC = 1e-4        # learning rate of the critic
 WEIGHT_DECAY = 0        # L2 weight decay
 WARMUP_TIME = 1024     # time for collecting initial experiences
-PLAY_TIME = 40#45          # timesteps for collecting experiences from agents
-WORK_TIME = 10          # timesteps for learning
-PLAY_TIME_DECAY = 0.999 # play time discount factor
-PLAY_TIME_MIN = 15      # play time minimum value
+
 
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
 class Agent():
     """Interacts with and learns from the environment."""
 
-    play_time = PLAY_TIME
 
     def __init__(self, agents_num, agent_id, state_size, action_size, random_seed):
         """Initialize an Agent object.
@@ -64,11 +60,9 @@ class Agent():
     def step(self, states, actions, rewards, next_states, dones, time_step):
         """Save experience in replay memory, and use random sample from buffer to learn."""
         # Save experience / reward
-        
-        #for state, action, reward, next_state, done in zip(states,actions,rewards,next_states,dones):            
+                
         self.memory.add([states], [actions], [rewards], [next_states], [dones])
-
-        #print('\n step-states{}'.format(states))
+        
         # Learn, if enough samples are available in memory
         if len(self.memory) > WARMUP_TIME:#BATCH_SIZE: 
             for _ in range(10):
@@ -141,7 +135,7 @@ class Agent():
         # Minimize the loss
         self.actor_optimizer.zero_grad()
         actor_loss.backward()
-        #torch.nn.utils.clip_grad_norm_(self.actor_local.parameters(), 1)    # clip gradients
+        
         self.actor_optimizer.step()
 
         # ----------------------- update target networks ----------------------- #
