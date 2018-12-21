@@ -28,7 +28,7 @@ Tennis.ipynb
 #### MADDPG  algorithm with Actor - Critic networks
 The model of the neural network used is shown in the picture:
 
-![Network model](./images/model.png  "Network model")
+![Network model](./images/model_agent.png  "Network model")
 
 I used a two layers network for the Actor
 
@@ -42,9 +42,9 @@ For the Critic, I also used a two layers network
 FCS1 size = 400
 FC2 size = 400 
 
-Input parameters are state (size 24) in first layer and action (size 2) in second layer and output is Q  value (size 1).
+Input parameters are states (size 48) in first layer and actions (size 4)  in second layer and output is Q  value (size 1).
 
-The activation function is *relu* on output of all hidden layers of Actor, except on the last layer of Actor where I used tanh (because the action values are in range [-1.1]). Critic is using *leaky_relu* activation function in all layers except the last layer of Critic where I did not use any activation function because the output was Q value.
+The activation function is *relu* on output of all hidden layers of Actor, except on the last layer of Actor where I used tanh (because the action values are in range [-1.1]). Critic is using *leaky_relu* activation function in all layers except the last layer, where I did not use any activation function because the output is Q value.
 
 The hyper parameters are: 
 
@@ -59,14 +59,29 @@ WEIGHT_DECAY = 0        # L2 weight decay
 WARMUP_TIME = 1024     # initial experience buffer fill time
 ```
 
-Learning rates of Actor and Critic are decreased for this project to stabilize learning. *WARMUP_TIME* is much lower than in base project.
+Learning rates of Actor and Critic are decreased for this project to stabilize learning. *WARMUP_TIME* is much lower than in base project. I was experimenting with changing TAU hyperparameter and with using hard update for target networks, but that did not give a result. 
 Other hyper parameters have the same values as in the original project.
 
-The code in *ddpg_agent.py* has been changed to support the input of 20 agents. Main idea in these code changes to keep model with one Actor and one Critic and to fill experience buffer with experiences of  20 agents to speed up exploration of state and action space.
-The experiences in the buffer are added randomly and uniformly so the probability that the experience of each of the agents will be added to the buffer is 50%, in this way we make the buffer more random and brake the correlations even more (something like dropout layer).
-I also used clipping gradients of Actor and Critic.
+As the paper [1706.02275](https://arxiv.org/pdf/1706.02275.pdf) propose, I have changed DDPG's agent, so Actor only has insight into its observation, while Critic has insight into the state and action of both agents, which can be seen in the picture underneath from mentioned paper.
 
-Algorithm solves environment in 3025 episodes:
+![Plot of rewards](./images/model_from_1706.02275.PNG  "Overview of multi-agent decentralized actor, centralized critic approach")
+
+The Critic in MADDPG learns a centralized action-value function 
+$$
+Qi(o⃗ ,a1,…,aN)
+$$
+for the i-th agent, where 
+$$
+a1∈A1,…,aN∈AN
+$$
+
+$$
+o⃗ =o1,…,oN
+$$
+
+are actions and observations of all agents. Each Qi is learned separately for i=1,…,N and therefore multiple agents can have arbitrary rewards, including conflicting rewards in a competitive setting. At the same time multiple actors, one for each agent, are exploring and upgrading the policy on their own.
+
+Algorithm solves environment in 3025 episodes. Partial log and plot of rewards can be seen below:
 
 	Episode 100	Average Score: 0.00	 Score: [ 0.   -0.01]
 	Episode 200	Average Score: 0.01	 Score: [-0.01  0.  ]
@@ -88,9 +103,10 @@ Algorithm solves environment in 3025 episodes:
 
 
 ## Ideas for Future Work 	
-In the next step I planed to try multi Critic model, in which every Critic learn from different experience samples and then  taking average of their Q values as output. Implementation of the Prioritized Experience Replay algorithm [https://arxiv.org/pdf/1511.05952](https://arxiv.org/pdf/1511.05952), I think will improve results also.
+In the next step I planed to try to optimize and speed up learning using network model with less parameters and better hyperparameters optimizations. Implementation of the Prioritized Experience Replay algorithm [https://arxiv.org/pdf/1511.05952](https://arxiv.org/pdf/1511.05952), I think will improve results also. After MADDPG optimization I will try to implement Proximal Policy Optimization (PPO) algorithm and to compare results with MADDPG.
 
 ## References
 
 1. [https://arxiv.org/pdf/1706.02275.pdf](https://arxiv.org/pdf/1706.02275.pdf)
-2. [https://towardsdatascience.com/introduction-to-various-reinforcement-learning-algorithms-i-q-learning-sarsa-dqn-ddpg-72a5e0cb6287](https://towardsdatascience.com/introduction-to-various-reinforcement-learning-algorithms-i-q-learning-sarsa-dqn-ddpg-72a5e0cb6287) 
+2. [https://lilianweng.github.io/lil-log/2018/04/08/policy-gradient-algorithms.html#maddpg](https://lilianweng.github.io/lil-log/2018/04/08/policy-gradient-algorithms.html#maddpg) 
+3. [https://medium.com/@scitator/run-skeleton-run-3rd-place-solution-for-nips-2017-learning-to-run-207f9cc341f8](https://medium.com/@scitator/run-skeleton-run-3rd-place-solution-for-nips-2017-learning-to-run-207f9cc341f8)
